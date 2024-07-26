@@ -5,3 +5,5 @@
 /SControlClient/x64/Debug/*.obj
 /SControlClient/x64/Debug
 /SControlServer/x64/Debug
+/.vs
+/x64
