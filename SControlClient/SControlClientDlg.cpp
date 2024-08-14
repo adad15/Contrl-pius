@@ -1,5 +1,4 @@
-﻿// SControlClientDlg.cpp: 实现文件
-#include "pch.h"
+﻿#include "pch.h"
 #include "framework.h"
 #include "SControlClient.h"
 #include "SControlClientDlg.h"
@@ -13,7 +12,6 @@
 #endif
 
 // 用于应用程序“关于”菜单项的 CAboutDlg 对话框
-
 class CAboutDlg : public CDialogEx
 {
 public:
@@ -45,11 +43,7 @@ BEGIN_MESSAGE_MAP(CAboutDlg, CDialogEx)
 
 END_MESSAGE_MAP()
 
-
-// CSControlClientDlg 对话框
-
-
-
+/* 创建工具栏 */
 void CSControlClientDlg::CreateToolBar()
 {
 	//创建ToolBar工具条
@@ -90,8 +84,10 @@ void CSControlClientDlg::CreateToolBar()
 	m_toolbar.SetButtonText(8, L"删除客户");
 }
 
+/* 初始化列表控件 */
 void CSControlClientDlg::InitListBeControl()
 {
+	// 插入列标题
 	m_ListBeControl.InsertColumn(0, _T("标识"), 0, 150);
 	m_ListBeControl.InsertColumn(1, _T("用户名"), 0, 150);
 	m_ListBeControl.InsertColumn(2, _T("操作系统"), 0, 150);
@@ -99,12 +95,13 @@ void CSControlClientDlg::InitListBeControl()
 	m_ListBeControl.InsertColumn(4, _T("IP"), 0, 150);
 	m_ListBeControl.InsertColumn(5, _T("PORT"), 0, 150);
 
-
+	// 设置扩展样式 
 	DWORD extStyle = m_ListBeControl.GetExtendedStyle();
-	extStyle |= LVS_EX_GRIDLINES;
-	extStyle |= LVS_EX_FULLROWSELECT;
+	extStyle |= LVS_EX_GRIDLINES;     // 网格线
+	extStyle |= LVS_EX_FULLROWSELECT; // 选择整行
 	m_ListBeControl.SetExtendedStyle(extStyle);
 
+	// 插入初始项
 	int i = 0;
 	m_ListBeControl.InsertItem(i,	  _T("本机"));
 	m_ListBeControl.SetItemText(i, 1, _T("Administrator"));
@@ -121,31 +118,41 @@ void CSControlClientDlg::InitListBeControl()
 	m_ListBeControl.SetItemText(i, 5, _T("6888"));
 }
 
+/* 下面列表控件初始化 */
 void CSControlClientDlg::InitListInfo()
 {
-	img2.Create(25, 25, ILC_COLOR32 | ILC_MASK, 1, 1);//加载图片大小，图片格式，图片数量
+	// 创建图像列表，设置图像大小和格式
+	img2.Create(25, 25, ILC_COLOR32 | ILC_MASK, 1, 1);
 
+	// 加载图标并添加到图像列表
 	HICON hIcon3 = NULL;
-
 	hIcon3 = (HICON) ::LoadImage(::AfxGetInstanceHandle(), MAKEINTRESOURCE(IDI_ICON_MSG), IMAGE_ICON, 64, 64, 0);
 	img2.Add(hIcon3);
 
+	// 设置列表控件的图像列表
 	m_ListInfo.SetImageList(&img2, 1);
+
+	// 插入列标题
 	m_ListInfo.InsertColumn(0, _T(""), 0, 33);
 	m_ListInfo.InsertColumn(1, _T("时间"), 0, 150);
 	m_ListInfo.InsertColumn(2, _T("消息"), 0, 600);
 
+	// 设置扩展样式
 	DWORD extStyle = m_ListInfo.GetExtendedStyle();
 	extStyle |= LVS_EX_GRIDLINES;
 	extStyle |= LVS_EX_FULLROWSELECT;
 	m_ListInfo.SetExtendedStyle(extStyle);
 }
 
+/* 用于在被控列表控件m_ListBeControl中添加一项新条目 */
 void CSControlClientDlg::AddListBeControlItem(const CString& _m_alias, const CString& _m_username, const CString& _m_os,
 	const CString& _m_runtime, const CString& _m_ip, const CString& _m_port)
 {
+	// 获取m_ListBeControl中当前项的数量，这个值用于确定新项的插入位置
 	int i = m_ListBeControl.GetItemCount();
+	// 在列表控件m_ListBeControl中的第i项插入_m_alias，即在列表的末尾添加一项，即标识列为_m_alias
 	m_ListBeControl.InsertItem(i, _m_alias);
+	// 为插入的新项设置子项文本
 	m_ListBeControl.SetItemText(i, 1, _m_username);
 	m_ListBeControl.SetItemText(i, 2, _m_os);
 	m_ListBeControl.SetItemText(i, 3, _m_runtime);
@@ -153,10 +160,13 @@ void CSControlClientDlg::AddListBeControlItem(const CString& _m_alias, const CSt
 	m_ListBeControl.SetItemText(i, 5, _m_port);
 }
 
+/* 修改被控列表控件m_ListBeControl中当前选中的项 */
 void CSControlClientDlg::ModListBeControlItem(const CString& _m_alias, const CString& _m_username, const CString& _m_os,
 	const CString& _m_runtime, const CString& _m_ip, const CString& _m_port)
 {
+	// 调用GetSelectionMark方法获取当前选中项的索引。
 	int i = m_ListBeControl.GetSelectionMark();
+	// 使用SetItemText方法修改当前选中项的各列文本
 	m_ListBeControl.SetItemText(i, 0, _m_alias);
 	m_ListBeControl.SetItemText(i, 1, _m_username);
 	m_ListBeControl.SetItemText(i, 2, _m_os);
@@ -165,28 +175,36 @@ void CSControlClientDlg::ModListBeControlItem(const CString& _m_alias, const CSt
 	m_ListBeControl.SetItemText(i, 5, _m_port);
 }
 
+/* 响应添加用户的消息响应函数 */
 void CSControlClientDlg::CmdAddUser()
 {
-	CUserInfoDlg userInfoDlg(this);
-	userInfoDlg.SetData();
-	userInfoDlg.DoModal();
+	CUserInfoDlg userInfoDlg(this); // 创建添加用户界面对象
+	userInfoDlg.SetData();  // 设置对话框数据
+	userInfoDlg.DoModal();  // 显示对话框
 }
 
+/* 响应修改用户的消息响应函数 */
 void CSControlClientDlg::CmdModUser()
 {
+	// 这段代码从m_ListBeControl列表控件中获取当前选中的项的索引，并将其存储在变量i中
 	int i = m_ListBeControl.GetSelectionMark();
 	if (i == -1) return;
+	// 从m_ListBeControl列表控件中获取当前选中项的各个字段值，并将其存储在相应的CString变量中
 	CString alias = m_ListBeControl.GetItemText(i, 0);
 	CString username = m_ListBeControl.GetItemText(i, 1);
 	CString os = m_ListBeControl.GetItemText(i, 2);
 	CString runtime = m_ListBeControl.GetItemText(i, 3);
 	CString ip = m_ListBeControl.GetItemText(i, 4);
 	CString port = m_ListBeControl.GetItemText(i, 5);
+	// 创建一个CUserInfoDlg类的对象，名为userInfoDlg，并将当前对话框CSControlClientDlg作为其父窗口
 	CUserInfoDlg userInfoDlg(this);
+	// 将获取到的用户信息传递给对话框进行初始化
 	userInfoDlg.SetData(false, alias, username, os, runtime, ip, port);
+	// 显示对话框
 	userInfoDlg.DoModal();
 }
 
+/* 删除操作的消息处理函数 */
 void CSControlClientDlg::CmdDelUser()
 {
 	int i = m_ListBeControl.GetSelectionMark();
@@ -208,6 +226,7 @@ void CSControlClientDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_LIST_INFO, m_ListInfo);
 }
 
+/* 消息映射表 */
 BEGIN_MESSAGE_MAP(CSControlClientDlg, CDialogEx)
 	ON_WM_SYSCOMMAND()
 	ON_WM_PAINT()
@@ -222,17 +241,11 @@ BEGIN_MESSAGE_MAP(CSControlClientDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON2, &CSControlClientDlg::OnBnClickedButton2)//UDP消息发送
 END_MESSAGE_MAP()
 
-
 // CSControlClientDlg 消息处理程序
-
 BOOL CSControlClientDlg::OnInitDialog()
 {
-
-
 	CDialogEx::OnInitDialog();
-
 	// 将“关于...”菜单项添加到系统菜单中。
-
 	// IDM_ABOUTBOX 必须在系统命令范围内。
 	ASSERT((IDM_ABOUTBOX & 0xFFF0) == IDM_ABOUTBOX);
 	ASSERT(IDM_ABOUTBOX < 0xF000);
@@ -257,31 +270,32 @@ BOOL CSControlClientDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO: 在此添加额外的初始化代码
+	CreateToolBar();      // 创建工具栏
+	InitListBeControl();  // 创建上面的列表控件
+	InitListInfo();		  // 创建下面的列表控件
 
-	CreateToolBar();
-	InitListBeControl();
-	InitListInfo();
-
-	m_udppass.Invoke(GetSafeHwnd());
+	m_udppass.Invoke(GetSafeHwnd()); // 启动客户端的主要函数
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
+/* 处理在线状态的消息，用于处理 Windows 消息的回调函数 */
 LRESULT CSControlClientDlg::OnOnLine(WPARAM wParam, LPARAM lParam)
 {
-
+	// 清空了两个列表控件中的所有项
 	m_ListBeControl.DeleteAllItems();
 	m_ListInfo.DeleteAllItems();
 	if (wParam == 1)
 	{
 		return LRESULT();
 	}
-
+	// 获取用户信息映射
 	std::map<long long, MUserInfo> mapAddrs = m_udppass.GetMapAddrs();
-	//显示到(信息提示列表中)
+	// 显示到(信息提示列表中)
 	int count0 = m_ListInfo.GetItemCount();
 	int count1 = m_ListBeControl.GetItemCount();
-	int i = 0;
+	int i = 0; // 初始化一个计数器 i，用于遍历 mapAddrs 映射
+	// 遍历mapAddrs映射中的每个用户信息，并将这些信息插入到m_ListInfo列表控件中
 	for (std::map<long long, MUserInfo>::iterator it = mapAddrs.begin();it != mapAddrs.end();it ++)
 	{
 		int idx = i + count0;
@@ -299,7 +313,8 @@ LRESULT CSControlClientDlg::OnOnLine(WPARAM wParam, LPARAM lParam)
 	i = 0;
 	//清空ids
 	m_ids.clear();
-	//显示到(控制列表中)
+
+	//显示到(控制列表中)，从 mapAddrs 映射中获取用户信息，并将这些信息插入到 m_ListBeControl 列表控件中
 	for (std::map<long long, MUserInfo>::iterator it = mapAddrs.begin(); it != mapAddrs.end(); it++)
 	{	
 		m_ids.push_back(it->first);
@@ -319,41 +334,47 @@ LRESULT CSControlClientDlg::OnOnLine(WPARAM wParam, LPARAM lParam)
 
 		i++;
 	}
-
 	return LRESULT();
 }
 
+/* 处理系统命令吗，响应系统消息WM_SYSCOMMAND（由窗口程序接收，以便处理各种系统命令） */
 void CSControlClientDlg::OnSysCommand(UINT nID, LPARAM lParam)
 {
+	// 这段代码检查 nID 是否与 IDM_ABOUTBOX 相匹配
+	// 具体来说，nID & 0xFFF0 会屏蔽掉 nID 的低 4 位，以匹配 IDM_ABOUTBOX 命令
 	if ((nID & 0xFFF0) == IDM_ABOUTBOX)
 	{
+		// 如果匹配，则创建一个 CAboutDlg 对话框对象 dlgAbout，
+		// 并调用其 DoModal 方法，以模态对话框的形式显示关于对话框
 		CAboutDlg dlgAbout;
 		dlgAbout.DoModal();
 	}
 	else
 	{
+		// 如果 nID 不匹配 IDM_ABOUTBOX，则调用基类 CDialogEx 的 OnSysCommand 方法，继续处理其他系统命令
 		CDialogEx::OnSysCommand(nID, lParam);
 	}
 }
-
-//第一版完成！！！！！哦耶！！！！
-
 
 // 如果向对话框添加最小化按钮，则需要下面的代码
 //  来绘制该图标。  对于使用文档/视图模型的 MFC 应用程序，
 //  这将由框架自动完成。
 
+/* 用于处理窗口的绘制消息。当窗口处于最小化状态时，它会创建一个设备上下文，擦除窗口背景，
+计算图标的居中位置，并在客户区绘制图标。如果窗口没有最小化，则调用基类的方法处理其他绘制操作。 */
 void CSControlClientDlg::OnPaint()
 {
 	if (IsIconic())
 	{
 		CPaintDC dc(this); // 用于绘制的设备上下文
-
+		// 发送 WM_ICONERASEBKGND 消息，以便窗口背景能够被正确地擦除。
+		// 这里将设备上下文句柄（HDC）作为 WPARAM 参数传递
 		SendMessage(WM_ICONERASEBKGND, reinterpret_cast<WPARAM>(dc.GetSafeHdc()), 0);
 
 		// 使图标在工作区矩形中居中
 		int cxIcon = GetSystemMetrics(SM_CXICON);
 		int cyIcon = GetSystemMetrics(SM_CYICON);
+		// 获取客户端区域的矩形
 		CRect rect;
 		GetClientRect(&rect);
 		int x = (rect.Width() - cxIcon + 1) / 2;
@@ -368,33 +389,35 @@ void CSControlClientDlg::OnPaint()
 	}
 }
 
-//当用户拖动最小化窗口时系统调用此函数取得光标
-//显示。
+//当用户拖动最小化窗口时系统调用此函数取得光标显示。
 HCURSOR CSControlClientDlg::OnQueryDragIcon()
 {
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
-
-
+/* 用于启动文件管理器对话框 */
 void CSControlClientDlg::CmdFileManager()
 {
+	// 获取选中的列表项索引
 	int i = m_ListBeControl.GetSelectionMark();
 	if (i == -1) return;
+	// 获取选中项的 IP 地址和端口号
 	CString ip = m_ListBeControl.GetItemText(i, 4);
 	CString port = m_ListBeControl.GetItemText(i, 5);
+	// 更新 CClientController 中的用户信息
 	if (CClientController::m_vecUserInfos.size() > 0)
 	{
 		CClientController::m_vecUserInfos.pop_back();
 	}
 	CClientController::m_vecUserInfos.push_back(USERINFO(ip, port));
-
+	// 创建并显示文件管理器对话框
 	fileManagerDlg = new CFileMangerDlg;
+	// IDD_FILE_MANAGER 是文件管理器对话框的资源 ID
 	fileManagerDlg->Create(IDD_FILE_MANAGER);
 	fileManagerDlg->ShowWindow(SW_SHOW);
 }
 
-
+/* 用于启动屏幕监视对话框 */
 void CSControlClientDlg::CmdScreenWatch()
 {
 	int i = m_ListBeControl.GetSelectionMark();
@@ -411,17 +434,18 @@ void CSControlClientDlg::CmdScreenWatch()
 	screenWatch->ShowWindow(SW_SHOW);
 }
 
-
+/* 用于处理按钮点击事件，建立连接 */
 void CSControlClientDlg::OnBnClickedButton1()
 {
 	int i = m_ListBeControl.GetSelectionMark();
 	if (i == -1) return;
 	if (m_ids.size() > 0) {
+		// 请求与指定 ID 的用户建立连接
 		m_udppass.RequestConnect(m_ids.at(i));
 	}
 }
 
-
+/* 用于处理按钮点击事件，发送控制请求 */
 void CSControlClientDlg::OnBnClickedButton2()
 {
 	m_udppass.SentToBeCtrl();

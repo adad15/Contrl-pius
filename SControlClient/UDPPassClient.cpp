@@ -1,20 +1,21 @@
 #include "pch.h"
 #include "UDPPassClient.h"
 
+// 处理TCP线程函数
 int UDPPassClient::ThreadTcpProc()
 {
-	//连接服务器(TCP)
+	// 客户端连接服务器(TCP)
 	int ret = connect(m_tcpSock, (sockaddr*)&m_tcpAddr, sizeof(sockaddr_in));
 	if (m_tcpSock == -1)
 	{
 		printf("%s(%d):%s socket error tcp (%d) %s\n", __FILE__, __LINE__, __FUNCTION__, errno, strerror(errno));
 		return -1;
 	}
-	//向服务器发个包，表示我上线了
+	// 将数据（用户数据）打包成CPacket类，然后调用Data方法将该数据包转换成string流，向服务器发送该流
 	CPacket pack(101, (BYTE*)&m_currentUser, sizeof(MUserInfo));
 	send(m_tcpSock, (char*)pack.Data(), pack.Size(), 0);
 
-	//
+	// 循环
 	while (!m_stop)
 	{
 		char buf[1024]{};
@@ -36,21 +37,22 @@ int UDPPassClient::ThreadTcpProc()
 		//处理数据
 		DealTcp(pack);
 	}
-
 	return -1;
 }
 
+// 处理UDP线程函数
 int UDPPassClient::ThreadUdpProc()
 {
-	//向服务器发个包，表示我上线了
+	// 将数据（用户id）打包成CPacket类，然后调用Data方法将该数据包转换成string流，向服务器发送该流
 	CPacket pack(101, (BYTE*)&m_currentUser.id, sizeof(m_currentUser.id));
 	sendto(m_udpSock, (char*)pack.Data(), pack.Size(),
 		0, reinterpret_cast<sockaddr*>(&m_udpAddr), sizeof(sockaddr_in));
-	//收取一个服务器发来的包，建立起连接
+	// 收取一个服务器发来的包，建立起连接
 	char buf[1024]{};
 	sockaddr_in serv_addr{};
 	int serv_addr_len = sizeof(serv_addr);
 	recvfrom(m_udpSock, buf, sizeof(buf), 0, (sockaddr*)&serv_addr, &serv_addr_len);
+
 	//等待服务器，发来数据
 	while (!m_stop)
 	{
@@ -73,23 +75,27 @@ int UDPPassClient::ThreadUdpProc()
 	return -1;
 }
 
+// UDP穿透的线程函数
 int UDPPassClient::ThreadUDPPass()
 {
+	// 创建一个 CPacket 对象，命令码为 123，数据内容为 "ping"
 	CPacket pack(123, (BYTE*)"ping", 4);
+	// 获取需要连接的用户信息
 	MUserInfo* pMInfo = (MUserInfo*)m_udpConectPack.sData.c_str();
+	// 配置对方的网络地址
 	sockaddr_in addr{};
 	addr.sin_family = AF_INET;
 	addr.sin_addr.s_addr = inet_addr(pMInfo->ip);
 	addr.sin_port = htons(pMInfo->port);
+	// 向对方发送 10 次 "ping" 数据包
 	for (int i = 0; i < 10; i++)
 	{
 		sendto(m_udpSock, (char*)pack.Data(), pack.Size(), 0, (sockaddr*)&addr, sizeof(sockaddr_in));
 	}
-
 	return -1;
 }
 
-
+// 保持在线状态的函数
 int UDPPassClient::KeepOnline()
 {
 	CPacket pack(103);
@@ -102,23 +108,28 @@ int UDPPassClient::KeepOnline()
 	return -1;
 }
 
+// 发送控制请求
 void UDPPassClient::SentToBeCtrl()
 {
+	// 检查 m_udpConectPack 的命令码是否有效
 	if (m_udpConectPack.nCmd != -1)
 	{
+		// 从 m_udpConectPack 中提取需要连接的用户信息
 		MUserInfo* pMInfo = (MUserInfo*)m_udpConectPack.sData.c_str();
+		// 配置对方的网络地址
 		sockaddr_in addr{};
 		addr.sin_family = AF_INET;
 		addr.sin_addr.s_addr = inet_addr(pMInfo->ip);
 		addr.sin_port = htons(pMInfo->port);
+		// 创建数据内容为 "hello" 的 CPacket 对象
 		char multiPath[]{ "hello" };
 		CPacket pack(2, (BYTE*)multiPath, strlen(multiPath));
+		// 发送数据包
 		sendto(m_udpSock, (char*)pack.Data(), pack.Size(), 0, (sockaddr*)&addr, sizeof(sockaddr_in));
-
 	}
-
 }
 
+// 构造函数：初始化UDP客户端
 UDPPassClient::UDPPassClient(const std::string& ip, short tcpPort, short udpPort) : m_tcpAddr(), m_udpAddr(), m_tcpSock(-1), m_udpSock(-1), m_thpool(5)
 {
 	InitSockEnv();
@@ -136,14 +147,17 @@ UDPPassClient::UDPPassClient(const std::string& ip, short tcpPort, short udpPort
 	memcpy(m_currentUser.ip, ip.c_str(), ip.size());
 }
 
+// 析构函数：销毁 UDP 客户端
 UDPPassClient::~UDPPassClient()
 {
 	m_stop = true;
 	DesSockEnv();
 }
 
+// 启动客户端的主要函数
 int UDPPassClient::Invoke(HWND hWnd)
 {
+	// 保存窗口句柄
 	m_hWnd = hWnd;
 	//创建套接字(TCP)
 	m_tcpSock = socket(AF_INET, SOCK_STREAM, 0);
@@ -169,25 +183,29 @@ int UDPPassClient::Invoke(HWND hWnd)
 		printf("%s(%d):%s socket error udp (%d) %s\n", __FILE__, __LINE__, __FUNCTION__, errno, strerror(errno));
 		return 0;
 	}
-
+	// 分配和启动 UDP 处理线程
 	m_thpool.DispatchWork(CMWork(this, (MT_FUNC)&UDPPassClient::ThreadUdpProc));
+	// 分配和启动 TCP 处理线程
 	m_thpool.DispatchWork(CMWork(this, (MT_FUNC)&UDPPassClient::ThreadTcpProc));
+	// 启动线程池
 	m_thpool.Invoke();
 	return 1;
 }
 
+// 处理接收到的 UDP 数据包
 void UDPPassClient::DealUdp(CPacket& pack, sockaddr_in& addr)
 {
-
 	int a = 0;
 
 	if (pack.nCmd == 2)
 	{
 		TRACE("udp消息:%s\r\n", pack.sData.c_str());
+		// 显示消息框
 		MessageBox(NULL, _T("hello"), _T("获取udp消息"), MB_OK);
 	}
 }
 
+// 处理接收到的 TCP 数据包
 void UDPPassClient::DealTcp(CPacket& pack)
 {
 	switch (pack.nCmd)
@@ -196,10 +214,12 @@ void UDPPassClient::DealTcp(CPacket& pack)
 	{
 		if (pack.sData.size() == 0)
 		{
+			// 如果数据包为空，清空在线用户信息并发送消息通知窗口
 			m_mapAddrs.clear();
 			SendMessage(m_hWnd, (WM_USER + 10), 1, NULL);
 			break;
 		}
+		// 将数据包中的用户信息存储到向量中
 		std::vector<MUserInfo> m_vecSockAddrs;
 		m_vecSockAddrs.resize(pack.sData.size() / sizeof(MUserInfo));
 		memcpy(m_vecSockAddrs.data(), pack.sData.c_str(), pack.sData.size());
@@ -210,16 +230,18 @@ void UDPPassClient::DealTcp(CPacket& pack)
 		{
 			m_mapAddrs.insert(std::pair<long long, MUserInfo>(m_vecSockAddrs.at(i).id, m_vecSockAddrs.at(i)));
 		}
+		// 发送消息通知窗口
 		SendMessage(m_hWnd, (WM_USER + 10), NULL, NULL);
 		break;
 	}
 	case 105://服务器发来数据，叫我和指定用户连接
 	{
+		// 将数据包保存到 m_udpConectPack 中
 		m_udpConectPack = pack;
+		// 分配并启动 ThreadUDPPass 线程
 		m_thpool.DispatchWork(CMWork(this, (MT_FUNC)&UDPPassClient::ThreadUDPPass));
 		break;
 	}
-
 	}
 }
 
@@ -228,6 +250,7 @@ std::map<long long, MUserInfo>& UDPPassClient::GetMapAddrs()
 	return m_mapAddrs;
 }
 
+// 请求与指定 ID 的用户建立连接
 void UDPPassClient::RequestConnect(long long id)
 {
 	std::map<long long, MUserInfo>::iterator it = m_mapAddrs.find(id);

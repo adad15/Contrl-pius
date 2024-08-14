@@ -1,7 +1,7 @@
 #pragma once
 
 /*
- *   CTool类：用于在Windows系统中实现自动启动应用程序的功能以及获取当前时间
+ *   CTool类：用于在Windows系统中实现自动启动应用程序的功能以及获取当前时间 
  *      1.静态成员函数 -> int AutoInvokeS(CStringW strExeName)：使用注册表的方式在Windows中实现自启动。
  *      它使用注册表的方式在Windows中实现。
  * 

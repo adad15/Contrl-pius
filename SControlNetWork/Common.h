@@ -170,4 +170,3 @@ struct ConnectIds
 };
 
 #pragma pack(pop)
-

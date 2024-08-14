@@ -16,7 +16,6 @@ CUserInfoDlg::CUserInfoDlg(CWnd* pParent /*=nullptr*/)
 	, m_ip(_T(""))
 	, m_port(_T(""))
 {
-
 }
 
 CUserInfoDlg::~CUserInfoDlg()

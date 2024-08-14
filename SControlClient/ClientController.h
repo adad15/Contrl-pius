@@ -2,6 +2,7 @@
 #include <vector>
 #include <string>
 #include "Common.h"
+
 class CClientController
 {
 public:

@@ -152,6 +152,7 @@ public:
 		m_vecThreads.clear();
 		m_mutex.unlock();
 	}
+	// 线程池只需启动一次就行了，所有的线程都激活了，没有任务的线程就在那里空转
 	bool Invoke()
 	{
 		bool isOk = true;
@@ -202,4 +203,3 @@ public:
 		}
 	}
 };
-

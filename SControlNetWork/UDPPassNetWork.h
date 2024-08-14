@@ -49,4 +49,3 @@ public:
 	//给所有用户发送地址
 	int SendAddrs();
 };
-

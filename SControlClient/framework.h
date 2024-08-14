@@ -1,5 +1,11 @@
 ﻿#pragma once
 
+/*
+ * 该文件主要用于配置和优化 MFC 应用程序的编译环境，通过包含必要的头文件和定义常用宏来减少编译时间
+ * 和生成的可执行文件大小，并确保程序可以正确使用 MFC 库和 Windows 公共控件。 
+ * 
+ */
+
 #ifndef VC_EXTRALEAN
 #define VC_EXTRALEAN            // 从 Windows 头中排除极少使用的资料
 #endif
@@ -14,10 +20,7 @@
 #include <afxwin.h>         // MFC 核心组件和标准组件
 #include <afxext.h>         // MFC 扩展
 
-
 #include <afxdisp.h>        // MFC 自动化类
-
-
 
 #ifndef _AFX_NO_OLE_SUPPORT
 #include <afxdtctl.h>           // MFC 对 Internet Explorer 4 公共控件的支持
@@ -28,14 +31,6 @@
 
 #include <afxcontrolbars.h>     // MFC 支持功能区和控制条
 
-
-
-
-
-
-
-
-
 #ifdef _UNICODE
 #if defined _M_IX86
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='x86' publicKeyToken='6595b64144ccf1df' language='*'\"")
@@ -45,5 +40,3 @@
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #endif
 #endif
-
-

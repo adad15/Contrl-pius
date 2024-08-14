@@ -2,7 +2,6 @@
 /*禁用4996号警告，通常用于忽略某些函数被认为不安全的警告。*/
 #pragma warning(disable:4996)
 
-
 #include <string>
 /*设定结构体成员的内存对齐方式为1字节对齐*/
 #pragma pack(push)

@@ -2,6 +2,11 @@
 #include "Common.h"
 #include <list>
 
+/*
+ * TCP任务线程和UDP差不多，只是TCP有aceept函数返回客户端的套接字，并且一一对应
+ * 所以需要线程池
+ * 
+ */
 int UDPPassNetWork::ThreadTcpProc()
 {
 	//接入客户端
@@ -17,6 +22,13 @@ int UDPPassNetWork::ThreadTcpProc()
 	return -1;
 }
 
+/* 
+ *  ThreadUdpProc：传入给UDP线程池的实际任务函数
+ *		1.封装recvfrom，拿到客户端的端口信息
+ *		2.调用封装好的CPacket类解析数据
+ *		3.调用DealUdp函数，处理数据
+ * 
+ */
 int UDPPassNetWork::ThreadUdpProc()
 {
 	//接入客户端
@@ -74,6 +86,11 @@ int UDPPassNetWork::ThreadTcpClnt(void* arg)
 	return -1;
 }
 
+/* 
+ * 构造函数，设置TCP、UDP端口信息
+ *	1.其中，TCP监听所有ip地址，UDP监听指定ip
+ *	2.设置线程池数量
+ */
 UDPPassNetWork::UDPPassNetWork(const std::string& ip, short tcpPort, short udpPort) 
 	: m_udpServAddr()
 	, m_tcpServAddr()
@@ -92,7 +109,6 @@ UDPPassNetWork::UDPPassNetWork(const std::string& ip, short tcpPort, short udpPo
 	m_udpServAddr.sin_family = AF_INET;
 	m_udpServAddr.sin_addr.s_addr = inet_addr(ip.c_str());
 	m_udpServAddr.sin_port = htons(udpPort);
-	//
 }
 
 UDPPassNetWork::~UDPPassNetWork()
@@ -106,9 +122,15 @@ UDPPassNetWork::~UDPPassNetWork()
 
 	close(m_tcpSock);
 	close(m_udpSock);
-
 }
 
+/* 
+ *	1.TCP、UDP套接字的绑定
+ *	2.启动TCP、UDP的线程池
+ *	3.将UDP连接任务和TCP连接任务分配给线程池
+ *	4.启动线程池
+ * 
+*/
 int UDPPassNetWork::Invoke()
 {
 	m_stop = false;
@@ -156,6 +178,29 @@ int UDPPassNetWork::Invoke()
 	return 0;
 }
 
+/*
+ *	DealUdp函数：处理解析好的数据
+ *		1.新客户端通过UDP连接到公网服务器
+ *			1.把clnt_addr转为ip和port
+ *			2.从pack解析出来的数据中提取用户id
+ *														  更新映射表中的ip和port信息
+ *														  调用SendAddrs函数，给每个映射表中的用户发送消息（用户id）
+ *			3.从m_mapAddrs映射表中查找是否有该用户的记录
+ *														  创建套接字信息结构体mInfo（包含解析出来的ip和port）
+ *														  将用户id加入到mInfo中
+ *														  将创建好的mInfo加入到映射表m_mapAddrs中
+ *			4.给客户端发送一个udp数据包
+ * 
+ *		2.心跳包检测
+ *			1.从pack解析出来的数据中提取用户id
+ *			2.从映射表中根据用户id查找最新时间，并更新。
+ * 
+ *		3.控制端想要发起控制，建立udp穿透
+ *			1.从pack解析出来的数据中提取两个客户端的用户id储存在ids里。
+ *			2.根据映射表查找两个客户端的端口信息
+ *			3.把端口信息发送给双方
+ *
+ */
 int UDPPassNetWork::DealUdp(CPacket& pack,sockaddr_in& clnt_addr)
 {
 	switch (pack.nCmd)
@@ -166,6 +211,7 @@ int UDPPassNetWork::DealUdp(CPacket& pack,sockaddr_in& clnt_addr)
 				//用户连上来，发了个id过来
 				char ip[16]{};
 				short port{};
+				// 把IP字符串化
 				int intIp = (clnt_addr.sin_addr.s_addr);
 				unsigned char* pCharIp = (unsigned char*)&intIp;
 				sprintf(ip, "%d.%d.%d.%d", pCharIp[0], pCharIp[1], pCharIp[2], pCharIp[3]);
@@ -173,7 +219,7 @@ int UDPPassNetWork::DealUdp(CPacket& pack,sockaddr_in& clnt_addr)
 				long long id = *(long long*)pack.sData.c_str();
 				m_mutex.lock();
 				std::map<long long, MUserInfo>::iterator find = m_mapAddrs.find(id);
-				//根据id找到地址，就修改就行了
+				//根据用户id找到地址，就修改就行了
 				if (find != m_mapAddrs.end())
 				{
 					memcpy(find->second.ip, ip, 16);
@@ -191,13 +237,12 @@ int UDPPassNetWork::DealUdp(CPacket& pack,sockaddr_in& clnt_addr)
 				}
 				m_mutex.unlock();
 
-				//回应一个信息
+				//回应一个信息，必要的只有回一个消息才会bind套接字，建立完整的连接
 				CPacket ackPack(101);
 				sendto(m_udpSock, ackPack.Data(), ackPack.Size(), 0, (sockaddr*)&clnt_addr, sizeof(sockaddr_in));
 
 			}
 			//TODO:通知tcp发地址信息给用户
-			
 			break;
 		}
 		case 103://用户发送心跳包（保持在线）
@@ -288,7 +333,6 @@ int UDPPassNetWork::DealTcp(CPacket& pack,int sock)
 				find_->second.port = tmp.port;
 				printf("already exist:%s %d\n", mInfo.ip, ntohs(mInfo.port));
 				SendAddrs();
-
 			}
 			//根据id找没到地址，就根据id创建一个
 			else
@@ -355,13 +399,16 @@ int UDPPassNetWork::DealTcp(CPacket& pack,int sock)
 			break;
 		}
 	}
-
 	return 0;
 }
 
+/*
+ * 给映射表中的所有登记的用户发送数据包，
+ * 数据包包含新连接用户的id，表示哪个用户上线了。
+ * 
+ */
 int UDPPassNetWork::SendAddrs()
 {
-	
 	//给每个人发
 	printf("devices:%lld\n", m_mapAddrs.size());
 	for (std::map<long long, MUserInfo>::iterator it = m_mapAddrs.begin(); it != m_mapAddrs.end(); it++)
@@ -376,7 +423,6 @@ int UDPPassNetWork::SendAddrs()
 			CPacket pack(102);
 			send(it->second.tcpSock, pack.Data(), pack.Size(), 0);
 		}
-		
 	}
 	return 0;
 }

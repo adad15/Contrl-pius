@@ -11,7 +11,7 @@
  *	1.唤起线程：_beginthread
  *  2.等待线程：WaitForSingleObject
  * 
- * 线程同步——事件对象
+ * 线程同步——事件对象 
  *	1.调用CreateEvent创建或打开事件对象
  *  2.调用SetEvent把指定的事件对象设置为有信号状态
  *  3.调用ResetEvent把指定的事件对象设置为无信号状态

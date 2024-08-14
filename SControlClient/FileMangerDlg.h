@@ -22,6 +22,7 @@ private:
 	void Time2CString(CString& strTime, __time64_t time);  //将时间转换为 CString
 	static void ThreadEntryDownLoadFile(void* arg);        //下载文件的线程入口
 	void ThreadDownLoadFile();							   //下载文件的线程
+
 public:
 	/*公有成员函数和对话框数据*/
 	CFileMangerDlg(CWnd* pParent = nullptr);   // 标准构造函数
